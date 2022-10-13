@@ -5,7 +5,7 @@ import type { AxiosTransform, CreateAxiosOptions } from './AxiosTransform';
 import { VAxios } from './Axios';
 import proxy from '@/config/proxy';
 import { joinTimestamp, formatRequestDate, setObjToUrlParams } from './utils';
-import { TOKEN_NAME } from '@/config/global';
+import { getUserStore } from '@/store';
 
 const env = import.meta.env.MODE || 'development';
 
@@ -35,21 +35,11 @@ const transform: AxiosTransform = {
     }
 
     // 错误的时候返回
-    const { data } = res;
-    if (!data) {
-      throw new Error('请求接口错误');
+    const { status, data } = res;
+    if (status !== 200) {
+      throw new Error(`请求接口错误, 错误码: ${status}`);
     }
-
-    //  这里 code为 后台统一的字段，需要在 types.ts内修改为项目自己的接口返回格式
-    const { code } = data;
-
-    // 这里逻辑可以根据项目进行修改
-    const hasSuccess = data && code === 0;
-    if (hasSuccess) {
-      return data.data;
-    }
-
-    throw new Error(`请求接口错误, 错误码: ${code}`);
+    return data;
   },
 
   // 请求前处理配置
@@ -110,7 +100,8 @@ const transform: AxiosTransform = {
   // 请求拦截器处理
   requestInterceptors: (config, options) => {
     // 请求之前处理config
-    const token = localStorage.getItem(TOKEN_NAME);
+    const userStore = getUserStore();
+    const { token } = userStore;
     if (token && (config as Recordable)?.requestOptions?.withToken !== false) {
       // jwt token
       (config as Recordable).headers.Authorization = options.authenticationScheme
@@ -121,8 +112,12 @@ const transform: AxiosTransform = {
   },
 
   // 响应拦截器处理
-  responseInterceptors: (res) => {
-    return res;
+  responseInterceptors: (response) => {
+    if (response.status !== 200) {
+      console.log(response.data);
+      return response;
+    }
+    return response;
   },
 
   // 响应错误处理
@@ -152,11 +147,11 @@ function createAxios(opt?: Partial<CreateAxiosOptions>) {
       <CreateAxiosOptions>{
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication#authentication_schemes
         // 例如: authenticationScheme: 'Bearer'
-        authenticationScheme: '',
+        authenticationScheme: 'Bearer',
         // 超时
         timeout: 10 * 1000,
         // 携带Cookie
-        withCredentials: true,
+        withCredentials: false,
         // 头信息
         headers: { 'Content-Type': 'application/json;charset=UTF-8' },
         // 数据处理方式
@@ -187,7 +182,7 @@ function createAxios(opt?: Partial<CreateAxiosOptions>) {
           withToken: true,
           // 重试
           retry: {
-            count: 3,
+            count: 0,
             delay: 1000,
           },
         },

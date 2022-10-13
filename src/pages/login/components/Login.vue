@@ -8,8 +8,15 @@
     @submit="onSubmit"
   >
     <template v-if="type == 'password'">
-      <t-form-item name="account">
-        <t-input v-model="formData.account" size="large" placeholder="请输入账号：admin">
+      <t-form-item name="username">
+        <t-input
+          v-model="formData.username"
+          size="large"
+          placeholder="请输入用户名"
+          clearable
+          @focus="saveOldUsername"
+          @blur="getUserStatus"
+        >
           <template #prefix-icon>
             <t-icon name="user" />
           </template>
@@ -22,7 +29,7 @@
           size="large"
           :type="showPsw ? 'text' : 'password'"
           clearable
-          placeholder="请输入登录密码：admin"
+          placeholder="请输入密码"
         >
           <template #prefix-icon>
             <t-icon name="lock-on" />
@@ -33,47 +40,29 @@
         </t-input>
       </t-form-item>
 
+      <!-- 需要验证码 -->
+      <t-form-item v-if="showCaptcha" name="captchaAnswer">
+        <t-input v-model="formData.captchaAnswer" size="large" placeholder="请输入验证码">
+          <template #prefix-icon>
+            <t-icon name="secured" />
+          </template>
+        </t-input>
+        <t-image :src="captchaImg" :style="{ height: '40px' }" @click="refreshCaptcha" />
+      </t-form-item>
+
       <div class="check-container remember-pwd">
         <t-checkbox>记住账号</t-checkbox>
         <span class="tip">忘记账号？</span>
       </div>
     </template>
 
-    <!-- 扫码登陆 -->
-    <template v-else-if="type == 'qrcode'">
-      <div class="tip-container">
-        <span class="tip">请使用微信扫一扫登录</span>
-        <span class="refresh">刷新 <t-icon name="refresh" /> </span>
-      </div>
-      <qrcode-vue value="" :size="192" level="H" />
-    </template>
-
-    <!-- 手机号登陆 -->
-    <template v-else>
-      <t-form-item name="phone">
-        <t-input v-model="formData.phone" size="large" placeholder="请输入手机号码">
-          <template #prefix-icon>
-            <t-icon name="mobile" />
-          </template>
-        </t-input>
-      </t-form-item>
-
-      <t-form-item class="verification-code" name="verifyCode">
-        <t-input v-model="formData.verifyCode" size="large" placeholder="请输入验证码" />
-        <t-button variant="outline" :disabled="countDown > 0" @click="sendCode">
-          {{ countDown == 0 ? '发送验证码' : `${countDown}秒后可重发` }}
-        </t-button>
-      </t-form-item>
-    </template>
-
     <t-form-item v-if="type !== 'qrcode'" class="btn-container">
-      <t-button block size="large" type="submit"> 登录 </t-button>
+      <t-button v-if="disableLogin" block size="large" theme="default" :disabled="disableLogin"> 账户已锁定 </t-button>
+      <t-button v-else block size="large" type="submit"> 登录 </t-button>
     </t-form-item>
 
     <div class="switch-container">
       <span v-if="type !== 'password'" class="tip" @click="switchType('password')">使用账号密码登录</span>
-      <span v-if="type !== 'qrcode'" class="tip" @click="switchType('qrcode')">使用微信扫码登录</span>
-      <span v-if="type !== 'phone'" class="tip" @click="switchType('phone')">使用手机号登录</span>
     </div>
   </t-form>
 </template>
@@ -81,52 +70,43 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import QrcodeVue from 'qrcode.vue';
 import { FormInstanceFunctions, MessagePlugin } from 'tdesign-vue-next';
 import { useCounter } from '@/hooks';
 import { useUserStore } from '@/store';
+import { captcha, userStatus } from '@/api/user';
 
 const userStore = useUserStore();
 
 const INITIAL_DATA = {
-  phone: '',
-  account: 'admin',
-  password: 'admin',
-  verifyCode: '',
+  username: 'admin',
+  password: '123456',
   checked: false,
+  captchaId: '',
+  captchaAnswer: '',
 };
 
 const FORM_RULES = {
   phone: [{ required: true, message: '手机号必填', type: 'error' }],
-  account: [{ required: true, message: '账号必填', type: 'error' }],
+  username: [{ required: true, message: '用户名必填', type: 'error' }],
   password: [{ required: true, message: '密码必填', type: 'error' }],
-  verifyCode: [{ required: true, message: '验证码必填', type: 'error' }],
+  captchaAnswer: [{ required: true, message: '验证码必填', type: 'error' }],
 };
 
 const type = ref('password');
 
 const form = ref<FormInstanceFunctions>();
 const formData = ref({ ...INITIAL_DATA });
+const oldUsername = ref('');
 const showPsw = ref(false);
-
-const [countDown, handleCounter] = useCounter();
+const showCaptcha = ref(false);
+const captchaImg = ref('');
+const disableLogin = ref(false);
 
 const switchType = (val: string) => {
   type.value = val;
 };
 
 const router = useRouter();
-
-/**
- * 发送验证码
- */
-const sendCode = () => {
-  form.value.validate({ fields: ['phone'] }).then((e) => {
-    if (e === true) {
-      handleCounter();
-    }
-  });
-};
 
 const onSubmit = async ({ validateResult }) => {
   if (validateResult === true) {
@@ -138,9 +118,69 @@ const onSubmit = async ({ validateResult }) => {
         path: '/dashboard/base',
       });
     } catch (e) {
-      console.log(e);
-      MessagePlugin.error(e.message);
+      if (e.response && e.response.data && e.response.data.message) {
+        if (e.response.data.message === 'invalid captcha') {
+          await getUserStatus();
+          MessagePlugin.error('验证码过期');
+        } else {
+          MessagePlugin.error(e.response.data.message);
+        }
+      }
+      await refreshCaptcha();
     }
+  }
+};
+
+const saveOldUsername = async () => {
+  oldUsername.value = formData.value.username;
+};
+
+const getUserStatus = async () => {
+  if (oldUsername.value === formData.value.username) {
+    return;
+  }
+  if (formData.value.username.length < 5) {
+    return;
+  }
+  try {
+    const data = await userStatus({ username: formData.value.username });
+    if (data.captcha) {
+      if (data.captcha.id !== '') {
+        showCaptcha.value = true;
+      } else {
+        showCaptcha.value = false;
+      }
+      formData.value.captchaId = data.captcha.id;
+      captchaImg.value = data.captcha.img;
+    } else {
+      showCaptcha.value = false;
+    }
+    if (data.locked === '1') {
+      disableLogin.value = true;
+    } else {
+      disableLogin.value = false;
+    }
+  } finally {
+  }
+};
+const refreshCaptcha = async () => {
+  if (!showCaptcha.value) {
+    return;
+  }
+  try {
+    const data = await captcha();
+    if (data.captcha) {
+      if (data.captcha.id !== '') {
+        showCaptcha.value = true;
+      } else {
+        showCaptcha.value = false;
+      }
+      formData.value.captchaId = data.captcha.id;
+      captchaImg.value = data.captcha.img;
+    } else {
+      showCaptcha.value = false;
+    }
+  } finally {
   }
 };
 </script>
