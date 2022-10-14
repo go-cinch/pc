@@ -71,7 +71,6 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { FormInstanceFunctions, MessagePlugin } from 'tdesign-vue-next';
-import { useCounter } from '@/hooks';
 import { useUserStore } from '@/store';
 import { captcha, userStatus } from '@/api/user';
 
