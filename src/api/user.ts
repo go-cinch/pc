@@ -1,11 +1,15 @@
 import { request } from '@/utils/request';
-import { UserCaptchaReply, UserInfoReply, UserLoginReply, UserStatusReply } from '@/api/model/user';
+import { FindUserReply, UserCaptchaReply, UserInfoReply, UserLoginReply, UserStatusReply } from '@/api/model/user';
 
 const Api = {
   UserLogin: '/auth/login',
   UserCaptcha: '/auth/captcha',
   UserStatus: '/auth/status',
   UserInfo: '/auth/info',
+  Register: '/auth/register',
+  FindUser: '/auth/user',
+  UpdateUser: '/auth/user',
+  DeleteUser: '/auth/user',
 };
 
 export function login(data) {
@@ -31,5 +35,32 @@ export function userStatus(params) {
 export function userInfo() {
   return request.get<UserInfoReply>({
     url: Api.UserInfo,
+  });
+}
+
+export function register(data) {
+  return request.post({
+    url: Api.Register,
+    data,
+  });
+}
+
+export function findUser(params) {
+  return request.get<FindUserReply>({
+    url: Api.FindUser,
+    params,
+  });
+}
+
+export function updateUser(data) {
+  return request.patch({
+    url: `${Api.UpdateUser}/${data.id}`,
+    data,
+  });
+}
+
+export function deleteUser(ids) {
+  return request.delete({
+    url: `${Api.DeleteUser}/${ids.join(',')}`,
   });
 }

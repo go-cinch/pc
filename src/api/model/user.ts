@@ -1,3 +1,5 @@
+import { Page } from '@/api/page';
+
 export interface UserLoginReply {
   code: number;
   reason: string;
@@ -30,4 +32,25 @@ export interface UserInfoReply {
   avatar: string;
   nickname: string;
   introduction: string;
+}
+
+export interface User {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  username: string;
+  code: string;
+  mobile: string;
+  status: string;
+  locked: string;
+  avatar: string;
+  nickname: string;
+  introduction: string;
+  lastLogin: string;
+  lockMsg: string;
+}
+
+export interface FindUserReply {
+  page: Page;
+  list: Array<User>;
 }

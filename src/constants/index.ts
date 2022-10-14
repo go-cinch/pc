@@ -1,3 +1,13 @@
+export const BOOL = {
+  TRUE: '1',
+  FALSE: '0',
+};
+
+export const STATUS_OPTIONS = [
+  { value: BOOL.TRUE, label: '正常' },
+  { value: BOOL.FALSE, label: '禁用' },
+];
+
 // 合同状态枚举
 export const CONTRACT_STATUS = {
   FAIL: 0,
