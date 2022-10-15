@@ -14,6 +14,12 @@ export default [
         component: () => import('@/pages/system/user/index.vue'),
         meta: { title: '用户' },
       },
+      {
+        path: 'action',
+        name: 'SystemAction',
+        component: () => import('@/pages/system/action/index.vue'),
+        meta: { title: '行为' },
+      },
     ],
   },
 ];
