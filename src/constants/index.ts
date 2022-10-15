@@ -3,9 +3,9 @@ export const BOOL = {
   FALSE: '0',
 };
 
-export const STATUS_OPTIONS = [
-  { value: BOOL.TRUE, label: '正常' },
-  { value: BOOL.FALSE, label: '禁用' },
+export const LOCKED_OPTIONS = [
+  { value: BOOL.FALSE, label: '正常' },
+  { value: BOOL.TRUE, label: '已锁定' },
 ];
 
 // 合同状态枚举

@@ -37,11 +37,11 @@
               </t-form-item>
             </t-col>
             <t-col :span="3">
-              <t-form-item label="状态" name="status">
+              <t-form-item label="状态" name="locked">
                 <t-select
-                  v-model="formData.status"
+                  v-model="formData.locked"
                   class="form-item-content"
-                  :options="STATUS_OPTIONS"
+                  :options="LOCKED_OPTIONS"
                   placeholder="请选择状态"
                 />
               </t-form-item>
@@ -78,10 +78,6 @@
         @select-change="handleSelectChange"
         @page-change="handlePageChange"
       >
-        <template #status="{ row }">
-          <t-tag v-if="row.status === BOOL.FALSE" theme="danger" variant="light">{{ 禁用 }}</t-tag>
-          <t-tag v-if="row.status === BOOL.TRUE" theme="success" variant="light">正常</t-tag>
-        </template>
         <template #locked="{ row }">
           <t-tag v-if="row.locked === BOOL.FALSE" theme="success" variant="light">正常</t-tag>
           <t-tag v-if="row.locked === BOOL.TRUE" theme="danger" variant="light">已锁定</t-tag>
@@ -132,7 +128,7 @@ import { ref, computed, onMounted } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { useSettingStore } from '@/store';
 import { prefix } from '@/config/global';
-import { BOOL, STATUS_OPTIONS } from '@/constants';
+import { BOOL, LOCKED_OPTIONS } from '@/constants';
 import { deleteUser, findUser, register, updateUser } from '@/api/user';
 
 const store = useSettingStore();
@@ -197,14 +193,6 @@ const COLUMNS = [
   },
   {
     title: '状态',
-    colKey: 'status',
-    width: 200,
-    cell: {
-      col: 'status',
-    },
-  },
-  {
-    title: '锁定',
     colKey: 'locked',
     width: 200,
     cell: {
