@@ -15,6 +15,12 @@ export default [
         meta: { title: '用户' },
       },
       {
+        path: 'group',
+        name: 'SystemGroup',
+        component: () => import('@/pages/system/user-group/index.vue'),
+        meta: { title: '用户组' },
+      },
+      {
         path: 'action',
         name: 'SystemAction',
         component: () => import('@/pages/system/action/index.vue'),
