@@ -79,7 +79,7 @@
         :on-cancel="cancelDelete"
         @confirm="confirmDelete"
       />
-      <t-dialog v-model:visible="editUserVisible" :header="editHeader" :on-cancel="cancelEdit" @confirm="confirmEdit">
+      <t-dialog v-model:visible="editVisible" :header="editHeader" :on-cancel="cancelEdit" @confirm="confirmEdit">
         <t-form :data="editFormData">
           <t-form-item label="名称" name="name">
             <t-input v-model="editFormData.name" placeholder="请输入内容" />
@@ -155,7 +155,7 @@ const editForm = {
 const formData = ref({ ...searchForm });
 const editFormData = ref({ ...editForm });
 const deleteVisible = ref(false);
-const editUserVisible = ref(false);
+const editVisible = ref(false);
 const editHeader = ref('');
 const isEdit = ref(false);
 const data = ref([]);
@@ -191,7 +191,7 @@ const resetIdx = () => {
 };
 
 const confirmDelete = async () => {
-  await deleteUserByIds([deleteIdx.value]);
+  await deleteByIds([deleteIdx.value]);
 };
 
 const cancelDelete = () => {
@@ -205,11 +205,11 @@ const showEdit = (row) => {
   } else {
     editHeader.value = '新增';
   }
-  editUserVisible.value = true;
+  editVisible.value = true;
 };
 
 const cancelEdit = () => {
-  editUserVisible.value = false;
+  editVisible.value = false;
 };
 
 const doCreate = async () => {
@@ -217,7 +217,7 @@ const doCreate = async () => {
     await createRole(editFormData.value);
     MessagePlugin.success('新建成功');
     await fetchData();
-    editUserVisible.value = false;
+    editVisible.value = false;
   } catch (e) {
     if (e.response && e.response.data && e.response.data.message) {
       MessagePlugin.error(e.response.data.message);
@@ -232,7 +232,7 @@ const doEdit = async () => {
     await updateRole(editFormData.value);
     MessagePlugin.success('修改成功');
     await fetchData();
-    editUserVisible.value = false;
+    editVisible.value = false;
   } catch (e) {
     if (e.response && e.response.data && e.response.data.message) {
       MessagePlugin.error(e.response.data.message);
@@ -250,7 +250,7 @@ const confirmEdit = async () => {
   }
 };
 
-const deleteUserByIds = async (ids) => {
+const deleteByIds = async (ids) => {
   if (ids.length === 0) {
     MessagePlugin.warning('请至少选择一条数据');
     return;
@@ -288,7 +288,7 @@ const handleCreate = ({ row }) => {
 };
 
 const handleDelete = async () => {
-  await deleteUserByIds(selectedRowKeys.value);
+  await deleteByIds(selectedRowKeys.value);
 };
 
 const handleSelectChange = (value) => {

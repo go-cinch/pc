@@ -13,12 +13,12 @@
         <t-col :span="8">
           <t-row :gutter="[16, 24]">
             <t-col :span="4">
-              <t-form-item label="唯一码" name="code">
+              <t-form-item label="名称" name="name">
                 <t-input
-                  v-model="formData.code"
+                  v-model="formData.name"
                   class="form-item-content"
                   type="search"
-                  placeholder="请输入唯一码"
+                  placeholder="请输入名称"
                   clearable
                   :style="{ minWidth: '80px' }"
                 />
@@ -79,7 +79,7 @@
         :on-cancel="cancelDelete"
         @confirm="confirmDelete"
       />
-      <t-dialog v-model:visible="editUserVisible" :header="editHeader" :on-cancel="cancelEdit" @confirm="confirmEdit">
+      <t-dialog v-model:visible="editVisible" :header="editHeader" :on-cancel="cancelEdit" @confirm="confirmEdit">
         <t-form :data="editFormData">
           <t-form-item label="名称" name="name">
             <t-input v-model="editFormData.name" placeholder="请输入内容" />
@@ -124,12 +124,6 @@ const COLUMNS = [
     align: 'left',
   },
   {
-    title: '唯一码',
-    colKey: 'code',
-    width: 150,
-    ellipsis: true,
-  },
-  {
     title: '名称',
     colKey: 'name',
     width: 150,
@@ -151,7 +145,7 @@ const COLUMNS = [
 ];
 
 const searchForm = {
-  code: '',
+  name: '',
   word: '',
 };
 const editForm = {
@@ -161,7 +155,7 @@ const editForm = {
 const formData = ref({ ...searchForm });
 const editFormData = ref({ ...editForm });
 const deleteVisible = ref(false);
-const editUserVisible = ref(false);
+const editVisible = ref(false);
 const editHeader = ref('');
 const isEdit = ref(false);
 const data = ref([]);
@@ -197,7 +191,7 @@ const resetIdx = () => {
 };
 
 const confirmDelete = async () => {
-  await deleteUserByIds([deleteIdx.value]);
+  await deleteByIds([deleteIdx.value]);
 };
 
 const cancelDelete = () => {
@@ -211,11 +205,11 @@ const showEdit = (row) => {
   } else {
     editHeader.value = '新增';
   }
-  editUserVisible.value = true;
+  editVisible.value = true;
 };
 
 const cancelEdit = () => {
-  editUserVisible.value = false;
+  editVisible.value = false;
 };
 
 const doCreate = async () => {
@@ -223,7 +217,7 @@ const doCreate = async () => {
     await createUserGroup(editFormData.value);
     MessagePlugin.success('新建成功');
     await fetchData();
-    editUserVisible.value = false;
+    editVisible.value = false;
   } catch (e) {
     if (e.response && e.response.data && e.response.data.message) {
       MessagePlugin.error(e.response.data.message);
@@ -238,7 +232,7 @@ const doEdit = async () => {
     await updateUserGroup(editFormData.value);
     MessagePlugin.success('修改成功');
     await fetchData();
-    editUserVisible.value = false;
+    editVisible.value = false;
   } catch (e) {
     if (e.response && e.response.data && e.response.data.message) {
       MessagePlugin.error(e.response.data.message);
@@ -256,7 +250,7 @@ const confirmEdit = async () => {
   }
 };
 
-const deleteUserByIds = async (ids) => {
+const deleteByIds = async (ids) => {
   if (ids.length === 0) {
     MessagePlugin.warning('请至少选择一条数据');
     return;
@@ -294,7 +288,7 @@ const handleCreate = ({ row }) => {
 };
 
 const handleDelete = async () => {
-  await deleteUserByIds(selectedRowKeys.value);
+  await deleteByIds(selectedRowKeys.value);
 };
 
 const handleSelectChange = (value) => {
