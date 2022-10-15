@@ -84,6 +84,8 @@
         </template>
         <template #op="slotProps">
           <a class="t-button-link" @click="handleRowEdit(slotProps)">编辑</a>
+          <a v-if="slotProps.row.locked === BOOL.FALSE" class="t-button-link" @click="handleRowLock(slotProps)">锁定</a>
+          <a v-else class="t-button-link" @click="handleRowUnlock(slotProps)">解锁</a>
           <a class="t-button-link" @click="handleRowDelete(slotProps)">删除</a>
         </template>
       </t-table>
@@ -94,7 +96,13 @@
         @confirm="confirmDelete"
       />
       <t-dialog
-        v-model:visible="editUserVisible"
+        v-model:visible="unlockVisible"
+        header="确认解锁？"
+        :on-cancel="cancelUnlock"
+        @confirm="confirmUnlock"
+      />
+      <t-dialog
+        v-model:visible="editVisible"
         :header="isEdit ? '编辑' : '新增'"
         :on-cancel="cancelEdit"
         @confirm="confirmEdit"
@@ -117,6 +125,16 @@
           </t-form-item>
           <t-form-item label="简介" name="introduction">
             <t-textarea v-model="editFormData.introduction" placeholder="请输入内容" />
+          </t-form-item>
+        </t-form>
+      </t-dialog>
+      <t-dialog v-model:visible="lockVisible" header="锁定" :on-cancel="cancelLock" @confirm="confirmLock">
+        <t-form :data="lockFormData">
+          <t-form-item label="永久锁定" name="forever">
+            <t-switch v-model="lockFormData.forever" />
+          </t-form-item>
+          <t-form-item v-if="!lockFormData.forever" label="截止时间" name="expire">
+            <t-date-picker v-model="lockFormData.expire" enable-time-picker allow-input clearable />
           </t-form-item>
         </t-form>
       </t-dialog>
@@ -226,10 +244,17 @@ const editForm = {
   nickname: '',
   introduction: '',
 };
+const lockForm = {
+  forever: false,
+  expire: '',
+};
 const formData = ref({ ...searchForm });
 const editFormData = ref({ ...editForm });
+const lockFormData = ref({ ...lockForm });
 const deleteVisible = ref(false);
-const editUserVisible = ref(false);
+const editVisible = ref(false);
+const lockVisible = ref(false);
+const unlockVisible = ref(false);
 const editHeader = ref('');
 const isEdit = ref(false);
 const data = ref([]);
@@ -258,14 +283,73 @@ const fetchData = async () => {
   }
 };
 
+const unlockIdx = ref(-1);
+
+const cancelUnlock = () => {
+  unlockVisible.value = false;
+};
+
+const confirmUnlock = async () => {
+  const params = {
+    id: unlockIdx.value,
+    locked: 0,
+  };
+  try {
+    await updateUser(params);
+    MessagePlugin.success('解锁成功');
+    await fetchData();
+    unlockVisible.value = false;
+  } catch (e) {
+    if (e.response && e.response.data && e.response.data.message) {
+      MessagePlugin.error(e.response.data.message);
+    }
+  } finally {
+    dataLoading.value = false;
+  }
+};
+
+const lockIdx = ref(-1);
+
+const cancelLock = () => {
+  lockVisible.value = false;
+};
+
+const confirmLock = async () => {
+  const params = {
+    id: lockIdx.value,
+    locked: 1,
+    lockExpireTime: '',
+  };
+  if (!lockFormData.value.forever) {
+    params.lockExpireTime = lockFormData.value.expire;
+    if (params.lockExpireTime === '') {
+      MessagePlugin.warning('请选择截止时间');
+      return;
+    }
+  }
+  try {
+    await updateUser(params);
+    MessagePlugin.success('锁定成功');
+    await fetchData();
+    lockVisible.value = false;
+  } catch (e) {
+    if (e.response && e.response.data && e.response.data.message) {
+      MessagePlugin.error(e.response.data.message);
+    }
+  } finally {
+    dataLoading.value = false;
+  }
+};
+
 const deleteIdx = ref(-1);
 
 const resetIdx = () => {
   deleteIdx.value = -1;
+  lockIdx.value = -1;
 };
 
 const confirmDelete = async () => {
-  await deleteUserByIds([deleteIdx.value]);
+  await deleteByIds([deleteIdx.value]);
 };
 
 const cancelDelete = () => {
@@ -279,11 +363,11 @@ const showEdit = (row) => {
   } else {
     editHeader.value = '新增';
   }
-  editUserVisible.value = true;
+  editVisible.value = true;
 };
 
 const cancelEdit = () => {
-  editUserVisible.value = false;
+  editVisible.value = false;
 };
 
 const doCreate = async () => {
@@ -291,7 +375,7 @@ const doCreate = async () => {
     await register(editFormData.value);
     MessagePlugin.success('新建成功');
     await fetchData();
-    editUserVisible.value = false;
+    editVisible.value = false;
   } catch (e) {
     if (e.response && e.response.data && e.response.data.message) {
       MessagePlugin.error(e.response.data.message);
@@ -306,7 +390,7 @@ const doEdit = async () => {
     await updateUser(editFormData.value);
     MessagePlugin.success('修改成功');
     await fetchData();
-    editUserVisible.value = false;
+    editVisible.value = false;
   } catch (e) {
     if (e.response && e.response.data && e.response.data.message) {
       MessagePlugin.error(e.response.data.message);
@@ -324,7 +408,7 @@ const confirmEdit = async () => {
   }
 };
 
-const deleteUserByIds = async (ids) => {
+const deleteByIds = async (ids) => {
   if (ids.length === 0) {
     MessagePlugin.warning('请至少选择一条数据');
     return;
@@ -355,6 +439,16 @@ const handleRowDelete = ({ row }) => {
   deleteVisible.value = true;
 };
 
+const handleRowLock = ({ row }) => {
+  lockIdx.value = row.id;
+  lockVisible.value = true;
+};
+
+const handleRowUnlock = ({ row }) => {
+  unlockIdx.value = row.id;
+  unlockVisible.value = true;
+};
+
 const handleCreate = ({ row }) => {
   isEdit.value = false;
   editFormData.value = editForm;
@@ -362,7 +456,7 @@ const handleCreate = ({ row }) => {
 };
 
 const handleDelete = async () => {
-  await deleteUserByIds(selectedRowKeys.value);
+  await deleteByIds(selectedRowKeys.value);
 };
 
 const handleSelectChange = (value) => {
