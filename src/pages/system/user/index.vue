@@ -242,6 +242,7 @@ const formData = ref({ ...searchForm });
 const editFormData = ref({ ...editForm });
 const deleteVisible = ref(false);
 const editUserVisible = ref(false);
+const editHeader = ref('');
 const isEdit = ref(false);
 const data = ref([]);
 const selectedRowKeys = ref([]);
@@ -286,6 +287,9 @@ const cancelDelete = () => {
 const showEdit = (row) => {
   if (row) {
     editFormData.value = row;
+    editHeader.value = `编辑${row.id}`;
+  } else {
+    editHeader.value = '新增';
   }
   editUserVisible.value = true;
 };
