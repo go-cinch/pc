@@ -21,6 +21,12 @@ export default [
         meta: { title: '用户组' },
       },
       {
+        path: 'role',
+        name: 'SystemRole',
+        component: () => import('@/pages/system/role/index.vue'),
+        meta: { title: '角色' },
+      },
+      {
         path: 'action',
         name: 'SystemAction',
         component: () => import('@/pages/system/action/index.vue'),
