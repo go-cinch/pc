@@ -124,9 +124,9 @@ const rowKey = 'id';
 const verticalAlign = 'top';
 const hover = true;
 const pagination = ref({
-  defaultPageSize: 20,
+  pageSize: 20,
   total: 100,
-  defaultCurrent: 1,
+  current: 1,
 });
 const COLUMNS = [
   {
@@ -199,15 +199,15 @@ const fetchData = async () => {
   dataLoading.value = true;
   const params = {
     ...formData.value,
-    'page.num': pagination.value.defaultCurrent,
-    'page.size': pagination.value.defaultPageSize,
+    'page.num': pagination.value.current,
+    'page.size': pagination.value.pageSize,
   };
   try {
     const { list, page } = await findAction(params);
     data.value = list;
     pagination.value = {
-      defaultCurrent: Number(page.num),
-      defaultPageSize: Number(page.size),
+      current: Number(page.num),
+      pageSize: Number(page.size),
       total: Number(page.total),
     };
   } catch (e) {
@@ -339,8 +339,8 @@ const handleSubmit = async ({ validateResult }) => {
 };
 
 const handlePageChange = (curr) => {
-  pagination.value.defaultCurrent = curr.current;
-  pagination.value.defaultPageSize = curr.pageSize;
+  pagination.value.current = curr.current;
+  pagination.value.pageSize = curr.pageSize;
   fetchData();
 };
 

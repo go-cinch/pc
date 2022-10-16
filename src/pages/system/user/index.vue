@@ -126,6 +126,32 @@
           <t-form-item label="简介" name="introduction">
             <t-textarea v-model="editFormData.introduction" placeholder="请输入内容" />
           </t-form-item>
+          <t-form-item v-if="isEdit" label="授权行为" name="action">
+            <t-select-input
+              v-model:inputValue="selectActionInput"
+              :value="selectActionData"
+              :allow-input="true"
+              placeholder="请选择或输入"
+              :tag-input-props="{ excessTagsDisplayType: 'break-line' }"
+              clearable
+              multiple
+              @tag-change="selectActionTagChange"
+              @input-change="selectActionInputChange"
+            >
+              <template #panel>
+                <t-checkbox-group
+                  v-if="selectActionOptions.length"
+                  v-model="selectActionChecked"
+                  :options="selectActionOptions"
+                  @change="selectActionOptionsCheckedChange"
+                />
+                <div v-else class="tdesign-demo__select-empty-multiple">暂无数据</div>
+              </template>
+              <template #suffixIcon>
+                <t-icon class="chevron-down" />
+              </template>
+            </t-select-input>
+          </t-form-item>
         </t-form>
       </t-dialog>
       <t-dialog v-model:visible="lockVisible" header="锁定" :on-cancel="cancelLock" @confirm="confirmLock">
@@ -148,6 +174,7 @@ import { useSettingStore } from '@/store';
 import { prefix } from '@/config/global';
 import { BOOL, LOCKED_OPTIONS } from '@/constants';
 import { deleteUser, findUser, register, updateUser } from '@/api/user';
+import { findAction } from '@/api/action';
 
 const store = useSettingStore();
 
@@ -155,9 +182,9 @@ const rowKey = 'id';
 const verticalAlign = 'top';
 const hover = true;
 const pagination = ref({
-  defaultPageSize: 20,
-  total: 100,
-  defaultCurrent: 1,
+  current: 1,
+  pageSize: 20,
+  total: 0,
 });
 const COLUMNS = [
   {
@@ -265,21 +292,43 @@ const fetchData = async () => {
   dataLoading.value = true;
   const params = {
     ...formData.value,
-    'page.num': pagination.value.defaultCurrent,
-    'page.size': pagination.value.defaultPageSize,
+    'page.num': pagination.value.current,
+    'page.size': pagination.value.pageSize,
   };
   try {
     const { list, page } = await findUser(params);
     data.value = list;
     pagination.value = {
-      defaultCurrent: Number(page.num),
-      defaultPageSize: Number(page.size),
+      current: Number(page.num),
+      pageSize: Number(page.size),
       total: Number(page.total),
     };
   } catch (e) {
     console.log(e);
   } finally {
     dataLoading.value = false;
+  }
+};
+
+const fetchActionData = async () => {
+  const params = {
+    word: selectActionInput.value,
+    'page.num': pagination.value.current,
+    'page.size': pagination.value.pageSize,
+  };
+  try {
+    const { list } = await findAction(params);
+    const arr = [];
+    for (const k in list) {
+      arr.push({
+        label: `${list[k].word}[${list[k].name}]`,
+        value: list[k].code,
+      });
+    }
+    selectActionOptions.value = arr;
+  } catch (e) {
+    console.log(e);
+  } finally {
   }
 };
 
@@ -360,6 +409,15 @@ const showEdit = (row) => {
   if (row) {
     editFormData.value = row;
     editHeader.value = `编辑${row.id}`;
+    const arr2 = [];
+    for (const k in row.actions) {
+      arr2.push({
+        label: `${row.actions[k].word}[${row.actions[k].name}]`,
+        value: row.actions[k].code,
+      });
+    }
+    selectActionData.value = arr2;
+    selectActionCheckedChange();
   } else {
     editHeader.value = '新增';
   }
@@ -387,7 +445,14 @@ const doCreate = async () => {
 
 const doEdit = async () => {
   try {
-    await updateUser(editFormData.value);
+    const arr2 = [];
+    for (const k in selectActionData.value) {
+      arr2.push(selectActionData.value[k].value);
+    }
+    await updateUser({
+      ...editFormData.value,
+      action: arr2.join(','),
+    });
     MessagePlugin.success('修改成功');
     await fetchData();
     editVisible.value = false;
@@ -474,9 +539,60 @@ const handleSubmit = async ({ validateResult }) => {
 };
 
 const handlePageChange = (curr) => {
-  pagination.value.defaultCurrent = curr.current;
-  pagination.value.defaultPageSize = curr.pageSize;
+  pagination.value.current = curr.current;
+  pagination.value.pageSize = curr.pageSize;
   fetchData();
+};
+
+const selectActionOptions = ref([]);
+const selectActionInput = ref('');
+const selectActionData = ref([]);
+const selectActionChecked = ref([]);
+
+const selectActionCheckedChange = () => {
+  const arr = [];
+  const list = selectActionData.value;
+  for (let i = 0, len = list.length; i < len; i++) {
+    arr.push(list[i].value);
+  }
+  selectActionChecked.value = arr;
+  selectActionInput.value = '';
+  fetchActionData();
+};
+
+const selectActionOptionsCheckedChange = (val, { current, type }) => {
+  if (!current) {
+    selectActionData.value = type === 'check' ? selectActionData.value.slice(1) : [];
+    return;
+  }
+  if (type === 'check') {
+    const option = selectActionOptions.value.find((t) => t.value === current);
+    selectActionData.value.push(option);
+  } else {
+    selectActionData.value = selectActionData.value.filter((v) => v.value !== current);
+  }
+  selectActionCheckedChange();
+};
+
+const selectActionTagChange = (currentTags, context) => {
+  const { trigger, index, item } = context;
+  if (trigger === 'clear') {
+    selectActionData.value = [];
+  }
+  if (['tag-remove'].includes(trigger)) {
+    selectActionData.value.splice(index, 1);
+  }
+  if (trigger === 'enter') {
+    const current = { label: item, value: item };
+    selectActionData.value.push(current);
+    selectActionOptions.value = selectActionOptions.value.concat(current);
+    selectActionInput.value = '';
+  }
+  selectActionCheckedChange();
+};
+
+const selectActionInputChange = () => {
+  fetchActionData();
 };
 
 onMounted(() => {
