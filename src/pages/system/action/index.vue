@@ -106,6 +106,20 @@
               :autosize="{ minRows: 5 }"
             />
           </t-form-item>
+          <t-form-item label="授权菜单" name="menu">
+            <t-textarea
+              v-model="editFormData.menu"
+              placeholder="请输入内容(1行表示1个菜单)"
+              :autosize="{ minRows: 5 }"
+            />
+          </t-form-item>
+          <t-form-item label="授权按钮" name="btn">
+            <t-textarea
+              v-model="editFormData.btn"
+              placeholder="请输入内容(1行表示1个按钮)"
+              :autosize="{ minRows: 5 }"
+            />
+          </t-form-item>
         </t-form>
       </t-dialog>
     </div>
@@ -184,6 +198,8 @@ const editForm = {
   name: '',
   word: '',
   resource: '',
+  menu: '',
+  btn: '',
 };
 const formData = ref({ ...searchForm });
 const editFormData = ref({ ...editForm });
