@@ -24,6 +24,10 @@ router.beforeEach(async (to, from, next) => {
     const { roles } = userStore;
 
     if (roles && roles.length > 0) {
+      if (!roles.includes('*') && !roles.includes(to.path)) {
+        next(roles[0]);
+        return;
+      }
       next();
     } else {
       try {
@@ -32,6 +36,13 @@ router.beforeEach(async (to, from, next) => {
         const { roles } = userStore;
 
         await permissionStore.initRoutes(roles);
+
+        if (roles && roles.length > 0) {
+          if (!roles.includes('*') && !roles.includes(to.path)) {
+            next(roles[0]);
+            return;
+          }
+        }
 
         if (router.hasRoute(to.name)) {
           next();

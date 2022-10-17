@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { TOKEN_NAME } from '@/config/global';
-import { store, usePermissionStore } from '@/store';
+import { store, usePermissionStore, useTabsRouterStore } from '@/store';
 import { login, userInfo } from '@/api/user';
 
 const InitUserInfo = {
@@ -11,7 +11,11 @@ const InitUserInfo = {
   avatar: '',
   nickname: '',
   introduction: '',
-  roles: [],
+  permission: {
+    resources: [],
+    menus: [],
+    btns: [],
+  },
 };
 
 export const useUserStore = defineStore('user', {
@@ -21,7 +25,10 @@ export const useUserStore = defineStore('user', {
   }),
   getters: {
     roles: (state) => {
-      return state.userInfo?.roles;
+      return state.userInfo?.permission.menus;
+    },
+    btns: (state) => {
+      return state.userInfo?.permission.btns;
     },
   },
   actions: {
@@ -35,7 +42,23 @@ export const useUserStore = defineStore('user', {
     async logout() {
       localStorage.removeItem(TOKEN_NAME);
       this.token = '';
-      this.userInfo = InitUserInfo;
+      this.userInfo = {
+        id: '',
+        username: '',
+        code: '',
+        mobile: '',
+        avatar: '',
+        nickname: '',
+        introduction: '',
+        permission: {
+          resources: [],
+          menus: [],
+          btns: [],
+        },
+      };
+
+      const tabsRouterStore = useTabsRouterStore();
+      tabsRouterStore.removeTabRouterList();
     },
     async removeToken() {
       this.token = '';

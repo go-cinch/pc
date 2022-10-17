@@ -9,11 +9,14 @@ function filterPermissionsRouters(routes: Array<RouteRecordRaw>, roles: Array<un
   routes.forEach((route) => {
     const children = [];
     route.children?.forEach((childRouter) => {
-      const roleCode = childRouter.meta?.roleCode || childRouter.name;
-      if (roles.indexOf(roleCode) !== -1) {
+      const menu = `${route.path}/${childRouter.path}`;
+      if (roles.indexOf('*') !== -1 || roles.indexOf(menu) !== -1) {
         children.push(childRouter);
       } else {
-        removeRoutes.push(childRouter);
+        removeRoutes.push({
+          parent: route,
+          child: childRouter,
+        });
       }
     });
     if (children.length > 0) {
@@ -36,9 +39,8 @@ export const usePermissionStore = defineStore('permission', {
 
       let removeRoutes = [];
 
-      console.log(roles);
       // special token
-      if (roles.includes('all')) {
+      if (roles.includes('*')) {
         accessedRouters = asyncRouterList;
       } else {
         const res = filterPermissionsRouters(asyncRouterList, roles);
@@ -49,15 +51,15 @@ export const usePermissionStore = defineStore('permission', {
       this.routers = accessedRouters;
       this.removeRoutes = removeRoutes;
 
-      removeRoutes.forEach((item: RouteRecordRaw) => {
-        if (router.hasRoute(item.name)) {
-          router.removeRoute(item.name);
+      removeRoutes.forEach((item) => {
+        if (router.hasRoute(item.child.name)) {
+          router.removeRoute(item.child.name);
         }
       });
     },
     async restore() {
-      this.removeRoutes.forEach((item: RouteRecordRaw) => {
-        router.addRoute(item);
+      this.removeRoutes.forEach((item) => {
+        router.addRoute(item.parent.name, item.child);
       });
     },
   },

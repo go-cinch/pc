@@ -32,6 +32,11 @@ export interface UserInfoReply {
   avatar: string;
   nickname: string;
   introduction: string;
+  permission: {
+    resources: Array<string>;
+    menus: Array<string>;
+    btns: Array<string>;
+  };
 }
 
 export interface User {
