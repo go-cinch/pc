@@ -36,7 +36,19 @@
                 />
               </t-form-item>
             </t-col>
-            <t-col :span="3">
+            <t-col :span="4">
+              <t-form-item label="平台" name="platform">
+                <t-input
+                  v-model="formData.platform"
+                  class="form-item-content"
+                  type="search"
+                  placeholder="请输入平台"
+                  clearable
+                  :style="{ minWidth: '80px' }"
+                />
+              </t-form-item>
+            </t-col>
+            <t-col :span="4">
               <t-form-item label="状态" name="locked">
                 <t-select
                   v-model="formData.locked"
@@ -78,6 +90,9 @@
         @select-change="handleSelectChange"
         @page-change="handlePageChange"
       >
+        <template #platform="{ row }">
+          <t-tag theme="success" variant="light">{{ row.platform }}</t-tag>
+        </template>
         <template #locked="{ row }">
           <t-tag v-if="row.locked === BOOL.FALSE" theme="success" variant="light">正常</t-tag>
           <t-tag v-if="row.locked === BOOL.TRUE" theme="danger" variant="light">已锁定</t-tag>
@@ -114,17 +129,8 @@
           <t-form-item label="密码" name="password">
             <t-input v-model="editFormData.password" placeholder="请输入内容" />
           </t-form-item>
-          <t-form-item label="手机号" name="mobile">
-            <t-input v-model="editFormData.mobile" placeholder="请输入内容" />
-          </t-form-item>
-          <t-form-item label="头像" name="avatar">
-            <t-input v-model="editFormData.avatar" placeholder="请输入内容" />
-          </t-form-item>
-          <t-form-item label="昵称" name="nickname">
-            <t-input v-model="editFormData.nickname" placeholder="请输入内容" />
-          </t-form-item>
-          <t-form-item label="简介" name="introduction">
-            <t-textarea v-model="editFormData.introduction" placeholder="请输入内容" />
+          <t-form-item label="平台" name="platform">
+            <t-input v-model="editFormData.platform" placeholder="请输入平台" />
           </t-form-item>
           <t-form-item v-if="isEdit" label="授权行为" name="action">
             <t-select-input
@@ -225,16 +231,12 @@ const COLUMNS = [
     ellipsis: true,
   },
   {
-    title: '昵称',
-    colKey: 'nickname',
-    width: 150,
-    ellipsis: true,
-  },
-  {
-    title: '手机号',
-    colKey: 'mobile',
-    width: 150,
-    ellipsis: true,
+    title: '平台',
+    colKey: 'platform',
+    width: 200,
+    cell: {
+      col: 'platform',
+    },
   },
   {
     title: '状态',
@@ -266,10 +268,7 @@ const searchForm = {
 const editForm = {
   username: '',
   password: '',
-  mobile: '',
-  avatar: '',
-  nickname: '',
-  introduction: '',
+  platform: '',
 };
 const lockForm = {
   forever: false,
